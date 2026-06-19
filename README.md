@@ -1,3 +1,8 @@
+ # 🚀 SmartPipeline Simulator
+
+🔗 **Live Demo:** [https://smart-pipeline-simulator.netlify.app](https://smart-pipeline-simulator.netlify.app)
+
+AI-Powered CPU Pipeline Hazard Simulator built for DPCO project.
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
