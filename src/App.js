@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import PipelineVisualizer from './components/PipelineVisualizer';
 import HazardDetector from './components/HazardDetector';
@@ -20,19 +20,31 @@ const navItems = [
   { id: 'about', icon: '⚙️', label: 'About', alwaysOn: true },
 ];
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return isMobile;
+}
+
 function App() {
+  const isMobile = useIsMobile();
   const [instructions, setInstructions] = useState([]);
   const [hazards, setHazards] = useState([]);
   const [inputText, setInputText] = useState('');
   const [activeTab, setActiveTab] = useState('howitworks');
   const [simulated, setSimulated] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSimulate = () => {
     const lines = inputText.trim().split('\n').filter(Boolean);
     setInstructions(lines);
     setSimulated(true);
     setActiveTab('pipeline');
+    if (isMobile) setSidebarOpen(false);
   };
 
   const renderContent = () => {
@@ -49,20 +61,49 @@ function App() {
     }
   };
 
+  const showSidebar = !isMobile || sidebarOpen;
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}>
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+
+      {/* Mobile overlay (click to close sidebar) */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 19,
+          }}
+        />
+      )}
 
       {/* Sidebar */}
       <div style={{
-        width: sidebarCollapsed ? '60px' : '220px',
-        background: 'rgba(15,12,41,0.95)',
+        width: '220px',
+        background: 'rgba(15,12,41,0.98)',
         borderRight: '1px solid rgba(167,139,250,0.2)',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'width 0.3s ease',
         overflow: 'hidden',
-        zIndex: 10,
         flexShrink: 0,
+        ...(isMobile
+          ? {
+              position: 'fixed',
+              top: 0, bottom: 0, left: 0,
+              zIndex: 20,
+              transform: showSidebar ? 'translateX(0)' : 'translateX(-100%)',
+              transition: 'transform 0.3s ease',
+              height: '100vh',
+            }
+          : { position: 'relative' }),
       }}>
 
         {/* Logo */}
@@ -72,13 +113,13 @@ function App() {
             borderBottom: '1px solid rgba(167,139,250,0.2)',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: '10px',
-            cursor: 'pointer',
+            flexShrink: 0,
           }}
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         >
-          <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🚀</span>
-          {!sidebarCollapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🚀</span>
             <span style={{
               background: 'linear-gradient(90deg, #f093fb, #4facfe)',
               WebkitBackgroundClip: 'text',
@@ -89,22 +130,34 @@ function App() {
             }}>
               SmartPipeline
             </span>
+          </div>
+          {isMobile && (
+            <span
+              onClick={() => setSidebarOpen(false)}
+              style={{ color: '#64748b', fontSize: '1.2rem', cursor: 'pointer', padding: '4px' }}
+            >
+              ✕
+            </span>
           )}
         </div>
 
         {/* Nav Items */}
-        <div style={{ flex: 1, padding: '10px 0' }}>
+        <div style={{ flex: 1, padding: '10px 0', overflowY: 'auto' }}>
           {navItems.map(item => {
             const isEnabled = item.alwaysOn || simulated;
             return (
               <div
                 key={item.id}
-                onClick={() => isEnabled && setActiveTab(item.id)}
+                onClick={() => {
+                  if (!isEnabled) return;
+                  setActiveTab(item.id);
+                  if (isMobile) setSidebarOpen(false);
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
-                  padding: '12px 15px',
+                  padding: '14px 15px',
                   cursor: isEnabled ? 'pointer' : 'not-allowed',
                   borderLeft: activeTab === item.id ? '3px solid #a78bfa' : '3px solid transparent',
                   background: activeTab === item.id
@@ -113,51 +166,47 @@ function App() {
                   transition: 'all 0.2s',
                   opacity: isEnabled ? 1 : 0.35,
                 }}
-                onMouseOver={e => {
-                  if (isEnabled && activeTab !== item.id)
-                    e.currentTarget.style.background = 'rgba(167,139,250,0.1)';
-                }}
-                onMouseOut={e => {
-                  if (activeTab !== item.id)
-                    e.currentTarget.style.background = 'transparent';
-                }}
               >
                 <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{item.icon}</span>
-                {!sidebarCollapsed && (
-                  <span style={{
-                    color: activeTab === item.id ? '#a78bfa' : '#94a3b8',
-                    fontSize: '0.85rem',
-                    whiteSpace: 'nowrap',
-                    fontWeight: activeTab === item.id ? 'bold' : 'normal',
-                  }}>
-                    {item.label}
-                  </span>
-                )}
+                <span style={{
+                  color: activeTab === item.id ? '#a78bfa' : '#94a3b8',
+                  fontSize: '0.85rem',
+                  whiteSpace: 'nowrap',
+                  fontWeight: activeTab === item.id ? 'bold' : 'normal',
+                }}>
+                  {item.label}
+                </span>
               </div>
             );
           })}
         </div>
 
         {/* Bottom */}
-        {!sidebarCollapsed && (
-          <div style={{
-            padding: '15px',
-            borderTop: '1px solid rgba(167,139,250,0.2)',
-            color: '#4a5568',
-            fontSize: '0.7rem',
-            textAlign: 'center',
-          }}>
-            DPCO Project 2026
-          </div>
-        )}
+        <div style={{
+          padding: '15px',
+          borderTop: '1px solid rgba(167,139,250,0.2)',
+          color: '#4a5568',
+          fontSize: '0.7rem',
+          textAlign: 'center',
+          flexShrink: 0,
+        }}>
+          DPCO Project 2026
+        </div>
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        minWidth: 0,
+        width: '100%',
+      }}>
 
         {/* Top Bar */}
         <div style={{
-          padding: '15px 25px',
+          padding: isMobile ? '12px 14px' : '15px 25px',
           borderBottom: '1px solid rgba(167,139,250,0.2)',
           background: 'rgba(15,12,41,0.8)',
           display: 'flex',
@@ -165,20 +214,37 @@ function App() {
           justifyContent: 'space-between',
           backdropFilter: 'blur(10px)',
           flexShrink: 0,
+          gap: '10px',
         }}>
-          <div>
-            <h1 style={{
-              background: 'linear-gradient(90deg, #f093fb, #f5576c, #4facfe)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontSize: '1.3rem',
-              fontWeight: 'bold',
-            }}>
-              🚀 SmartPipeline Simulator
-            </h1>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '2px' }}>
-              AI Powered CPU Pipeline Hazard Simulator
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            {isMobile && (
+              <span
+                onClick={() => setSidebarOpen(true)}
+                style={{ fontSize: '1.4rem', color: '#a78bfa', cursor: 'pointer', flexShrink: 0 }}
+              >
+                ☰
+              </span>
+            )}
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{
+                background: 'linear-gradient(90deg, #f093fb, #f5576c, #4facfe)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontSize: isMobile ? '1rem' : '1.3rem',
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                margin: 0,
+              }}>
+                🚀 SmartPipeline
+              </h1>
+              {!isMobile && (
+                <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '2px' }}>
+                  AI Powered CPU Pipeline Hazard Simulator
+                </p>
+              )}
+            </div>
           </div>
 
           {simulated && (
@@ -186,17 +252,26 @@ function App() {
               background: 'rgba(167,139,250,0.1)',
               border: '1px solid rgba(167,139,250,0.3)',
               borderRadius: '8px',
-              padding: '5px 12px',
+              padding: isMobile ? '4px 8px' : '5px 12px',
               color: '#a78bfa',
-              fontSize: '0.8rem',
+              fontSize: isMobile ? '0.68rem' : '0.8rem',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}>
-              ✅ {instructions.length} instructions loaded
+              ✅ {instructions.length}
             </div>
           )}
         </div>
 
         {/* Scrollable Area */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '25px' }}>
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: isMobile ? '14px' : '25px',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}>
 
           {/* Input Section */}
           <div style={{
@@ -204,8 +279,9 @@ function App() {
             margin: '0 auto 25px',
             background: 'rgba(102,126,234,0.1)',
             borderRadius: '16px',
-            padding: '20px',
+            padding: isMobile ? '14px' : '20px',
             border: '1px solid rgba(167,139,250,0.25)',
+            boxSizing: 'border-box',
           }}>
             <p style={{ color: '#a78bfa', marginBottom: '10px', fontWeight: 'bold', fontSize: '0.9rem' }}>
               📝 Enter Assembly Instructions:
@@ -226,6 +302,7 @@ function App() {
                 fontFamily: 'monospace',
                 resize: 'vertical',
                 outline: 'none',
+                boxSizing: 'border-box',
               }}
             />
             <button
@@ -243,15 +320,6 @@ function App() {
                 width: '100%',
                 letterSpacing: '1px',
                 boxShadow: '0 4px 15px rgba(102,126,234,0.4)',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-              }}
-              onMouseOver={e => {
-                e.target.style.transform = 'scale(1.02)';
-                e.target.style.boxShadow = '0 6px 20px rgba(102,126,234,0.6)';
-              }}
-              onMouseOut={e => {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.boxShadow = '0 4px 15px rgba(102,126,234,0.4)';
               }}
             >
               ▶ Simulate
@@ -260,7 +328,7 @@ function App() {
 
           {/* Tab Content */}
           {activeTab === 'howitworks' || activeTab === 'cpu' || activeTab === 'about' || simulated ? (
-            <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <div style={{ animation: 'fadeIn 0.3s ease', width: '100%' }}>
               {renderContent()}
             </div>
           ) : (
