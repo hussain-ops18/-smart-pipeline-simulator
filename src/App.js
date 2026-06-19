@@ -7,6 +7,7 @@ import AIExplainer from './components/AIExplainer';
 import CPUComparison from './components/CPUComparison';
 import HowItWorks from './components/HowItWorks';
 import CPUAnimation from './components/CPUAnimation';
+import About from './components/About';
 
 const navItems = [
   { id: 'howitworks', icon: '⚡', label: 'How It Works', alwaysOn: true },
@@ -16,6 +17,7 @@ const navItems = [
   { id: 'performance', icon: '📈', label: 'Performance', alwaysOn: false },
   { id: 'ai', icon: '🤖', label: 'AI Explainer', alwaysOn: false },
   { id: 'cpu', icon: '🖥️', label: 'CPU Comparison', alwaysOn: false },
+  { id: 'about', icon: '⚙️', label: 'About', alwaysOn: true },
 ];
 
 function App() {
@@ -33,17 +35,6 @@ function App() {
     setActiveTab('pipeline');
   };
 
-  // Debug check
-  console.log('Component check:', {
-    PipelineVisualizer: typeof PipelineVisualizer,
-    HazardDetector: typeof HazardDetector,
-    PerformanceGraph: typeof PerformanceGraph,
-    AIExplainer: typeof AIExplainer,
-    CPUComparison: typeof CPUComparison,
-    HowItWorks: typeof HowItWorks,
-    CPUAnimation: typeof CPUAnimation,
-  });
-
   const renderContent = () => {
     switch (activeTab) {
       case 'howitworks': return <HowItWorks />;
@@ -53,6 +44,7 @@ function App() {
       case 'performance': return simulated ? <PerformanceGraph instructions={instructions} /> : null;
       case 'ai': return simulated ? <AIExplainer hazards={hazards} instructions={instructions} /> : null;
       case 'cpu': return <CPUComparison />;
+      case 'about': return <About />;
       default: return null;
     }
   };
@@ -267,7 +259,7 @@ function App() {
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'howitworks' || activeTab === 'cpu' || simulated ? (
+          {activeTab === 'howitworks' || activeTab === 'cpu' || activeTab === 'about' || simulated ? (
             <div style={{ animation: 'fadeIn 0.3s ease' }}>
               {renderContent()}
             </div>
