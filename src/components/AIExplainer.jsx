@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+const API_URL = 'https://smart-pipeline-backend.onrender.com/api/explain';
+
 const SUGGESTIONS = [
   '🔀 How does forwarding work?',
   '⏸️ What are stall cycles?',
@@ -46,7 +48,7 @@ Instructions: ${instructions.join(', ')}
 Hazards: ${hazardSummary}`;
 
     try {
-      const response = await fetch('http://localhost:5000/api/explain', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -66,7 +68,7 @@ Hazards: ${hazardSummary}`;
     } catch (err) {
       setMessages([{
         role: 'assistant',
-        text: '❌ Error connecting to AI server. Make sure server is running on port 5000.',
+        text: '❌ Error connecting to AI server. The backend might be waking up (free tier) — please wait 30-50s and try again.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         error: true,
       }]);
@@ -111,7 +113,7 @@ Hazards: ${hazardSummary}`;
         })),
       ];
 
-      const response = await fetch('http://localhost:5000/api/explain', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: apiMessages }),
@@ -128,7 +130,7 @@ Hazards: ${hazardSummary}`;
     } catch (err) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        text: '❌ Error connecting to AI. Check if server is running on port 5000.',
+        text: '❌ Error connecting to AI. The backend might be waking up (free tier) — please wait and try again.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         error: true,
       }]);
@@ -288,6 +290,9 @@ Hazards: ${hazardSummary}`;
               </p>
               <p style={{ color: '#475569', fontSize: '0.8rem' }}>
                 AI is examining {instructions.length} instructions and {hazards.length} hazards
+              </p>
+              <p style={{ color: '#334155', fontSize: '0.7rem', textAlign: 'center', maxWidth: '280px' }}>
+                (First request may take 30-50s if server was sleeping)
               </p>
               <div style={{ display: 'flex', gap: '6px' }}>
                 {[0, 1, 2].map(dot => (
